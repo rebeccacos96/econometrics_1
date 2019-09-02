@@ -1,0 +1,114 @@
+---
+title: "ca1b_Costello"
+author: "Rebecca Costello"
+date: "9/2/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#Packages
+library(foreign)
+library(tidyverse)
+library(dagitty)
+library(ggdag)
+library(dplyr)
+library(tinytex)
+library(haven)
+```
+
+```{r}
+#data
+theUrl_ca1b <- "https://surfdrive.surf.nl/files/index.php/s/Db2koAkiilZADXg/download"
+college <- read.dta (file = theUrl_ca1b)
+```
+
+III. Potential Outcomes
+(a) Define the two potential outcomes for a particular individual i, Y(0,i) and Y(1,i).
+1. Choosing public college
+2. Choosing private college
+
+(b) Discuss reasons for future earnings to be affected by attending a private college or not.
+Private colleges may provide a better education as they charge more, thus potentially having more money to spend on the quality of the education. Due to their price, private colleges are usually attended by people who can afford it, thus students have peers that could potentially offer them a lot of contacts/networks to help succeed in the working world.
+
+IV. Causal diagram
+
+```{r}
+ca1b <- dagitty('dag{
+  priv [pos="0,0"]
+  earn [pos="2,0"]
+  abil [pos="1,-1"]
+  
+  priv -> earn
+  priv <- abil -> earn
+}')
+ggdag(ca1b)
+```
+
+
+(b) After adjusting for ‘applicant group’, the remaining variation in whether students attend a private or public college is supposedly as-good-as-random, with the left variation within groupd based on factors that are not confounders. Discuss where this variation may come from and how realistic this assumption is.
+
+The variation can be explained by a number of things. A persons family might have a connection to a specific school or the student wanted to go to the same school as friends for instance. One school may have be closer by, or offer certain scholarships/services that appeal to different individuals. Experiences that individuals have and their reactions to difference school experiences are unique and can explain the variation.
+
+(c) Someone’s occupation (after completing college) is associated with earnings, and also with someone’s earlier choice of college. Should occupation be considered as a confounder?
+
+Occupation could be considered a confounder, but only if the choice of occupation before going to college was the same as the occupation entered into after going to college (college was chosen to enter into a certain occupation which has a certian earnings level).
+
+```{r}
+ca1b <- dagitty('dag{
+  priv [pos="0,0"]
+  earn [pos="2,0"]
+  abil [pos="1,-1"]
+  occu [pos="1,1"]
+  
+  priv -> earn
+  priv <- abil -> earn
+  priv <- occu -> earn
+}')
+ggdag(ca1b)
+```
+
+
+d) Say you also have information on SAT scores (a test of ability). Where would this variable fit into your causal diagram? 
+SAT scores, representing a students ability can influence whether one goes to private/public school but also later earnings. Therefore I would place it where abil is now.
+
+V. Descriptive Statistics
+```{r descriptve statistics}
+
+#mean future earnings of those who attended private school against those who didn't.
+sumEarnings1996 <- college %>%
+              group_by(PrivateUni) %>%
+              summarise(mean_Earnings1996 = weighted.mean(Earnings1996))
+sumEarnings1996
+```
+
+VI. Regression Analysis
+
+(a) Run a regression that controls for Applicant Group A (dummy already available), and that excludes
+Applicant Groups C and D (make sure to understand why we exclude these groups). Show the re-
+gression output. Interpret the estimated effect (and recall from CA1a what I mean by interpreting a
+regression coefficient).
+
+```{r}
+#regression of health insurance on health status (husbands), controlling for income
+summary(lm(Earnings1996 ~ PrivateUni, data=college, subset= d_ApplicantGroup_A==1, weights = ))
+```
+
+The estimation results suggest a decreased earnings of 5000 for those who attend private university than those who don't.
+
+(b) Compare your regression results with the direct comparison of earnings by the variable PrivateUni (in Descriptive statistics). Explain why the unconditional comparison over/under-estimates the treatment effect.
+
+Looking at the descriptive statistics you would conclude that there would be a 19500eu (average) increase of earnings for those who attended private school compared with those who didn't. This comparison over-estimates the effect of going to a private school on future earnings. When looking within groups with similar characteristics that going to private school does not have so great an effect as we had though, indicates that students who went to the private school would have probably have reached a certain earnings level anyways.
+
+
+
+
+
+
+
+
+
+

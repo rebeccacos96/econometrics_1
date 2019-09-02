@@ -1,0 +1,128 @@
+---
+title: "CA1aCostello"
+author: "Rebecca Costello"
+date: "8/29/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#Packages
+library(foreign)
+library(tidyverse)
+library(dagitty)
+library(ggdag)
+library(dplyr)
+library(tinytex)
+```
+
+```{r}
+#To Load data into memory
+library(haven)
+nhis <- read_dta ("nhis2009_subsample_v1112.dta")
+```
+
+
+```{r}
+ca1a <- dagitty('dag{
+  ins [pos="0,2"]
+  inc [pos="1,4"]
+  qua [pos="2,3"]
+  hap [pos="2,4"]
+  stat [pos="3,2"]
+  use [pos="1,1"]
+  fin [pos="1,0"]
+  risk [pos="1,-1"]
+  rav [pos ="1,-2"]
+  
+  ins <- inc -> hap -> stat
+  inst -> stat
+  ins -> use -> stat
+  ins -> fin -> stat
+  ins <- inc -> qua -> stat
+  ins -> risk -> stat
+  ins <-rav -> stat
+}')
+ggdag(ca1a)
+```
+
+
+
+III. Potential outcomes
+(a) Define the two potential outcomes for a particular individual, Y(0,i) and Y(1,i).
+
+Y(0,i) = Potential outcome without insurance
+Y(1,i) = Potential outcome with insurance
+1. Health status remains the same.
+2. Health status changes.
+
+(b) Thinking of a particular individual who may or may not have health insurance (i.e. someone generally on low pay), provide two reasons for her health status to be affected by having health insurance.
+
+1. If someone has health insurance, the feeling of having this 'safelty net' may lead to hazardous behavious, this affecting someones health status.
+2. Some health insurances, for instance dental insurance, require the insured individual to visit the dentist at least one time per year to receive dental coverage.
+3. With health insurance, people are less likely to wait until the last moment to get treatment/depend on only the emergency departments (which cannot turn away non-insured individuals), but get their health issues regularly fixed as it is covered in the insurance (less financial worries). Therefore maintaining a higher health status, less problems will go unnoticed.
+
+IV. Causal diagram
+(a) Given the non-causal path health insurance<-income->quality of food intake->health status, are we likely to over-estimate or under-estimate the effect of health insurance on health status if we do not adjust for income?
+
+We are more likely to over-estimate the effect of health insurance on health status. For instance, rich people are more likely to be insured, but also have the money to buy better quality food and pay for luxury goods/services/activites (increased happiness), which increases their health status. But part of the increased health status gained seeminly by having health insurance is partly due to higher income.
+
+(b) Same question, but now for the non-causal path health insurance<-income->happiness->health status, the story being that high-income individuals are on average happier than low-income individuals.
+
+We are again more likely to over-estimate the effect of health insurance on health status. People with a higher level of income, may be able to work less/have more flexibilty in their work, and be able to buy luxury goods/services that contribute to their overall happiness and thus their health status. Their are also more likely to have insurance. So we see people with insurance having a higher health status leading us to overestimate the this effect.
+
+(c) Say that individuals with health insurance become more careless: they take more risk given that health care costs are taken care of (remember moral hazard). Is that a source of selection bias in a regression of health insurance on health status? Include ‘risky behavior’ in your causal diagram.
+
+Risky behavior is a collider/mediator. (From the question) Whether someone has health insurance, influences the risky behaviour (that arises from having health insurance) that can affect the health status. Therefore it is not a source of selection bias and should not be controlled from.
+The path goes as follows:
+ins -> risky behaviour -> stat
+
+Something to note - does the people become more careless because they have insurance or do they become careless from having insurance?
+
+(d) Say that relatively careless individuals are more likely to buy health insurance (remember adverse selection). Is that a source of selection bias in a regression of health insurance on health status? Include ‘risk aversion’ in your causal diagram.
+
+Yes, that is a source of selection bias in a regression of health on health status and should be controlled for.
+
+V. Descriptive Statistics
+
+```{r descriptve statistics}
+
+#mean health index for husbands with and without health insruance
+sumhlth <- nhis %>%
+              filter(fml==0) %>%
+              group_by(hi) %>%
+              summarise(mean_hlth = weighted.mean(hlth,perweight))
+sumhlth
+```
+
+
+```{r descriptive statistics}
+#mean income level for husbands with and without health insurance
+suminc <- nhis %>%
+            filter(fml==0) %>%
+            group_by(hi) %>%
+            summarise(mean_inc = weighted.mean(incmp,perweight))
+suminc
+
+```
+
+VI. Regression Analysis
+
+```{r regression analysis}
+#naive regression of health insurance on health status (for husbands)
+summary(lm(hlth ~ hi, data=nhis, subset= fml==0, weights = perweight))
+```
+For husbands who do have health insurance there is an estimated 0.31 increase on health status (on a scale of 1 to 5) compared to husbands who do not have health insurance. This result is significant at 0.001 p-value.
+
+
+```{r regression analysis II}
+#regression of health insurance on health status (husbands), controlling for income
+summary(lm(hlth ~ hi + incmp, data=nhis, subset= fml==0, weights = perweight))
+```
+
+The estimation results suggest a 0.06 higher health status (on a scale of 1 to 5) for those (husbands) with health insurance compared to those without health insurance. The inclusion of income in the regression analysis has greatly decreased the effect of health insurance on health status, thus allowing us to conclude that income can be an important factor with the relationship between health insurance and health status.
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
