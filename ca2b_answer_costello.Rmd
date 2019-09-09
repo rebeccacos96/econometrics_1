@@ -1,0 +1,181 @@
+---
+title: "ca2b_answer_costello"
+author: "Rebecca Costello"
+date: "9/9/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Task: Estimate and interpret the effect of a treatment in another randomized trial.
+
+Research Question: Are applications from guests with distinctively African American names less likely to be accepted relative to identical guests with distinctively white names.
+
+```{r packages, include=FALSE}
+options(repos="https://cran.rstudio.com")
+install.packages("jtools")
+install.packages("huxtable")
+install.packages("ggstance")
+install.packages("summarytools")
+install.packages("pwr")
+install.packages("knitr")
+install.packages("lemon")
+install.packages("matrix")
+install.packages("dplyr")
+install.packages("ggdag")
+install.packages("RecordLinkage")
+```
+
+```{r library, include=FALSE}
+library(RecordLinkage)
+library(jtools)
+library(foreign)
+library(tidyverse)
+library(ggdag)
+library(dplyr)
+library(tinytex)
+library(jtools)
+library(huxtable)
+library(summarytools)
+library(ggstance)
+library(pwr)
+library(knitr)
+library(lemon)
+library(haven)
+
+```
+
+
+```{r give variable different name}
+knit_print.data.frame <- lemon_print
+```
+
+```{r tell summarytools that we work in R Markdown}
+st_options(plain.ascii = FALSE, style = "rmarkdown")
+st_css()
+```
+
+```{r data}
+heUrl_ca2b <- "https://surfdrive.surf.nl/files/index.php/s/DOGvC9BFm945QF1/download"
+airbnb <- read_dta ("edelman2017_v1112.dta")
+```
+
+1. Define the two potential outcomes for a particular guest, Y(0,i) and Y(1,i). Provide one or more
+reasons why someone’s last name may affect the chance of being accepted by a host.
+
+Y(0,i) = no/not a postitive response from the host/not being accepteded to be a guest
+Y(1,i) = yes/a postive response/ being accepted to be a guest
+
+
+Someone's last name is passed down through generations and so can have connections with a persons culture/history/race. Humans attach charateristics to groups of people, with some attaching negative prejudices that would influence the decision to accept the guest before actually meeting the peopl. This can usually be explained through selection bias, where a person opinions about a particular few people and applies it to be true for all cases in the population.
+The media/institutions in power also help connect qualitities of a few to the whole population in a way to influence and control peoples opinions.
+
+2. Browse the data set. Make sure to browse ALL variables, by selecting a further set of columns at the
+top. Then provide:
+
+(a) a histogram of the outcome variable; 
+```{r histogram 1}
+ggplot(airbnb, aes(x=as.factor(yes)))+
+geom_histogram(stat="count")+
+labs(x='yes', y='count', title='Fraction of people accepted as a guest')
+```
+
+(b) the overall mean acceptance rate.
+```{r mean value acceptance rate}
+summary(airbnb$yes)
+```
+
+3. Check for balance on two covariates: whether the host is African-American and whether the host is male (see Table 1 above) - by way of cross tabs. Test for a difference between treatment and control for whether the host is male (only).
+
+```{r cross table host_race_black against treatment}
+ctable(airbnb$guest_black, airbnb$host_race_black)
+```
+
+
+```{r r cross table host_gender_ against treatment}
+ctable(airbnb$guest_black, airbnb$host_gender_M)
+```
+
+Test for a difference between treatment and control for whether the host is male (only).
+```{r t test for whether the host is male}
+t.test(airbnb$host_gender_M~airbnb$guest_black)
+```
+
+There was a statistically significant difference found at a significance level of 5%.
+
+4. Minimum sample size. Let us put ourselves in the position of the authors before the data were collected. How many guests would they have to include in their sample at the minimum to be able to detect a treatment effect, assuming that there is a treatment effect? Assume that they want to have statistical power of 80%.
+
+```{r descriptive stats of outcome variable in control}
+airbnb %>%
+  filter(guest_black==0) %>%
+  summarise(mean=mean(yes, na.rm=TRUE), sd=sd(yes, na.rm=TRUE))
+```
+Say that a 5 percentage-points change in the acceptance rate is the minimum effect of this treatment.
+Effect Size: 0.05/0.5 = 0.1 - effect of 0.1 standard deviations is considered small.
+
+
+```{r required sample size}
+pwr.t.test(n = NULL, d = 0.1, sig.level = 0.05, power = 0.8,
+           type = c("two.sample"), alternative="two.sided")
+```
+
+The minimum sample size is n = 1571
+
+5. Graphically explore the treatment effect. Create a bar graph showing the difference in the outcome
+variable by the treatment dummy.
+
+```{r assign the means for control and treatment to a variable}
+airbnb_peek <- airbnb %>% group_by(guest_black) %>%
+  summarise(yes_mean=mean(yes, na.rm=TRUE))
+airbnb_peek
+```
+
+```{r plot the two means in a bar graph}
+ggplot(airbnb_peek, aes(y=yes_mean, x=as.factor(guest_black))) + geom_bar(stat='identity', fill='darkblue') + labs(x='guest is black', y='average acceptance rate', title='Average acceptance rates based on race')
+```
+
+
+
+For African-American/Black people, there is a lower average number of acceptances as a guest.
+
+6. Estimate the treatment effect. Replicate the three columns of Edelman and Luca 2017, Table 2, p. 8 (shown below). Use a linear probability model. Do not worry about clustering standard errors, we will get back to this later in this course. To show the standard errors rather than the confidence intervals, set the option confint=FALSE when using the command summ.
+
+
+```{r}
+#Regression 1 with only guest_black included
+reg1 <- lm(yes ~ guest_black, data=airbnb)
+summ(reg1, confint=TRUE)
+```
+ 
+```{r}
+#Regression 2 with guest is black, host is black, host is male included
+reg2 <- lm(yes ~ guest_black + host_race_black + host_gender_M, data=airbnb)
+summ(reg2, confint=FALSE)
+```
+
+```{r}
+#Regression 3 with guest is black, host is black, host is male included, host has multiple listings, shared property, host has 10+ reviews and In(price)
+reg3 <- lm(yes ~ guest_black + host_race_black + host_gender_M + multiple_listings +
+               shared_property + ten_reviews + log_price, data=airbnb)
+summ(reg3, confint=TRUE)
+```
+
+```{r plot the 95 percent confidence interval for the estimated treatment effect}
+treatment_effect <- c("Treatment_effect"="treatment")
+plot_summs(reg1, scale = TRUE, coefs = treatment_effect, plot.distributions = TRUE)
+```
+
+The regression analysis indicates a lower acceptance rate for those who are black/african-american as opposed to those who are not. The first two regression report an estimated change of -0.08 in acceptances which is bigger than the 5% minimum effect rate that was included earlier, therefore supporting the conclusion of the regression.
+
+
+
+
+
+
+
+
+
+
+

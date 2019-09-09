@@ -1,0 +1,214 @@
+---
+title: "Computer Assignment 2a"
+author: "Rebecca Costello"
+date: "9/3/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages, include=FALSE}
+options(repos="https://cran.rstudio.com")
+install.packages("jtools")
+install.packages("huxtable")
+install.packages("ggstance")
+install.packages("summarytools")
+install.packages("pwr")
+install.packages("knitr")
+install.packages("lemon")
+install.packages("matrix")
+install.packages("dplyr")
+install.packages("ggdag")
+
+
+library(foreign)
+library(tidyverse)
+library(ggdag)
+library(dplyr)
+library(tinytex)
+library(jtools)
+library(huxtable)
+library(summarytools)
+library(ggstance)
+library(pwr)
+library(knitr)
+library(lemon)
+
+```
+
+```{r}
+#To improve the layout of the command summarise
+knit_print.data.frame <- lemon_print
+```
+
+```{r}
+#to tell summarytools that we are working in R Markdown
+st_options(plain.ascii = FALSE, style = "rmarkdown")
+st_css()
+```
+
+```{r data}
+theUrl_ca2a <- "https://surfdrive.surf.nl/files/index.php/s/ULZJ0bBbphCttpG/download"
+library(haven)
+students <- read_dta ("ca2a_2019.dta")
+```
+
+II. Potential outcomes
+
+(a) Define the two potential outcomes for a particular student, Y(0,i) and Y(1,i).
+Y(0,i) = Risk perceptions remain the same
+T(1,i) = Higher risk perceptions. 
+
+(b) Thinking of a particular individual, why exactly would someone’s perception of bicycle theft be affected by having been reminded of the last instance of bicycle theft?
+When someone first recalls the last instance of bicycle theft, they remenber the feelings/emotions attached to that experience. It is brought to the forfront of their mind and they use this information in answering the next question. This can also be called the availability heuristic.
+
+
+III. Descriptive statistics
+```{r summary}
+#overview of variables in the data set
+summary(students)
+```
+```{r summary one variable}
+#summary of one variable in the data set
+summary(students$perception_person_low)
+```
+
+```{r histogram of outcome variable}
+ggplot(students, aes(x=as.factor(perception_person_low)))+
+geom_histogram(stat="count")+
+labs(x='perception', y='count', title='Perception bicycle theft risk is low')
+```
+
+```{r missings}
+#to know if there are any missings NA in the outcome variable
+summary(is.na(students$perception_person_low))
+```
+
+IV. Balance check
+```{r cross tabs}
+library(Matrix)
+
+
+#create a cross tab for females by treatment status
+ctable(students$treatment, students$female)
+
+#cross tab for international
+ctable(students$treatment, students$international)
+
+#cross tab for moved notrecent
+ctable(students$treatment, students$moved_notrecent)
+
+#cross tab for age20
+ctable(students$treatment, students$age20)
+```
+
+
+```{r t test}
+#t test for females with and without treatment
+t.test(students$female~students$treatment)
+
+```
+
+Difference between standard deviation of a variable and the standard deviation of the mean of that variable (standard error):
+Standard deviation (SD): measures the amount of variablity, or dispersion, for a subject set of data from the mean.
+Standard error (SEM): measures how far the sample mean of the data is likely to be from the population mean.
+SEM<SD
+
+V. Statistical power
+effect size (d) - treatment effect (difference between means) divided by the standard deviation
+significance level (sig. level)
+level of power (power)
+
+```{r}
+#mean and standard deviation of the outcome variable in control
+students %>% 
+  filter(treatment==0) %>% 
+  summarise(mean=mean(perception_person_low), sd=sd(perception_person_low))
+
+```
+
+A 10 percentage-points change in the share of students with low perception of the bicycle theft risk is the minimum effect of this treatment.
+Calculate the treatment effect: 0.1/0.5 = 0.2
+
+```{r sample size}
+#report the required sample size
+pwr.t.test(n = NULL, d = 0.2, sig.level = 0.05, power = 0.8,
+type = c("two.sample"), alternative="two.sided")
+```
+
+```{r power when n is 92}
+pwr.t.test(n = 92, d = 0.2, sig.level = 0.05, power = NULL,
+  type = c("two.sample"), alternative="two.sided")
+```
+
+VI. Estimating treatment effect in a randomized trial
+
+(a) Take a first peek at the treatment effect with a bar graph. First assign the means for control and
+treatment to a variable:
+
+```{r}
+#assign the means for control and treatment to a variable
+students_peek <- students %>% group_by(treatment) %>%
+summarise(perception_person_low_mean=mean(perception_person_low))
+```
+
+```{r, include=FALSE}
+#plot the two means
+ggplot(students_peek, aes(y=perception_person_low_mean, x=as.factor(treatment))) + geom_bar(stat='identity', fill='darkblue') + labs(x='Treatment', y='share with low perceived theft risk', title='Having low perceived theft risk by treatment status')
+
+
+```
+
+What does the graph suggest about the direction of the effect?
+The direction of the graph suggest that with the treatment, there is a decrease in the mean share with low perceived theft risk.
+
+(b) To test whether the above difference is compatible with the hypothesis of no effect, i.e. sampling error, we are going to run a regression of the treatment dummy on the outcome variable (using a linear
+probability model).
+The estimation equation:
+Y_i= B_0 + B_1x +B_2e
+
+```{r regression}
+install.packages("RecordLinkage")
+library(RecordLinkage)
+library(jtools)
+
+reg1 <- lm(perception_person_low ~ treatment, data=students)
+summ(reg1, confint=TRUE)
+```
+
+```{r plot}
+#Plot the 95 percent confidence interval for the estimated treatment effect as follows
+treatment_effect <- c("Treatment_effect"="treatment")
+plot_summs(reg1, scale = TRUE, coefs = treatment_effect, plot.distributions = TRUE)
+```
+
+
+(d) Did the treatment have a statistically significant effect on the outcome variable? If so, at what level of confidence are you able to reject your null hypothesis (1, 5, 10% confidence level)?
+Yes the treatment has a statistically significant effect on the outcome variable at a 5% confidence level.
+
+(e) Interpret the regression results for the variable treatment. Remember the proper way of reporting an estimated effect from the lecture - and that percentages and percentage points are not the same thing.
+Treatment is dicotomus- therefore a one-unit increase in treatment, ie for those who had first the question to recall theft incident before being asked about perceived risk, lead to a change of -0.15/-.28/-0.01 percentage points in low perceived perception of risk. In other words, the treatment group had a higher perceived perception of risk.
+
+f) Is the size of the estimated treatment effect large or small?
+The estimated treatment effect is -0.15.
+Bets +-1.96SE(B)
+-0.15+1.96(-.28)= -0.6988
+-0.15-1.96(-.28)= 0.3988
+
+Judgement of size of treatment effect:
+Beta/baseline mean of outcome variable (in control/treatment?) *100%
+-0.15/0.4*100 = 37.5
+!!!!What does this mean??
+
+(g) And in terms of the number of standard deviations of the outcome variable, how does the size of the effect compare to d=0.2 in section VII?
+
+(h) Those students who never had their bicycle stolen could not really be treated. Does the fact that not all in the treatment group were really treated lead to a bias in the estimated effect of the treatment?
+Yes as the effect the framing of the questions were supposed to have would not have changed anything. We wanted to measure this effect and their data being included would disrupt the effect.
+
+
+
+
+
+
