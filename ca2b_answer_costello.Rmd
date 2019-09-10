@@ -1,9 +1,10 @@
 ---
-title: "ca2b_answer_costello"
+title: "Computer Assignment 2b Costello"
 author: "Rebecca Costello"
 date: "9/9/2019"
 output: pdf_document
 ---
+Rebecca Costello - Ties van der Veen - Niels van Opstal
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -13,7 +14,7 @@ Task: Estimate and interpret the effect of a treatment in another randomized tri
 
 Research Question: Are applications from guests with distinctively African American names less likely to be accepted relative to identical guests with distinctively white names.
 
-```{r packages, include=FALSE}
+```{r packages, eval=FALSE, include=FALSE}
 options(repos="https://cran.rstudio.com")
 install.packages("jtools")
 install.packages("huxtable")
@@ -65,8 +66,8 @@ airbnb <- read_dta ("edelman2017_v1112.dta")
 1. Define the two potential outcomes for a particular guest, Y(0,i) and Y(1,i). Provide one or more
 reasons why someone’s last name may affect the chance of being accepted by a host.
 
-Y(0,i) = no/not a postitive response from the host/not being accepteded to be a guest
-Y(1,i) = yes/a postive response/ being accepted to be a guest
+Y(0,i) = not being accepteded to be a guest
+Y(1,i) = being accepted to be a guest
 
 
 Someone's last name is passed down through generations and so can have connections with a persons culture/history/race. Humans attach charateristics to groups of people, with some attaching negative prejudices that would influence the decision to accept the guest before actually meeting the peopl. This can usually be explained through selection bias, where a person opinions about a particular few people and applies it to be true for all cases in the population.
@@ -113,7 +114,7 @@ airbnb %>%
   summarise(mean=mean(yes, na.rm=TRUE), sd=sd(yes, na.rm=TRUE))
 ```
 Say that a 5 percentage-points change in the acceptance rate is the minimum effect of this treatment.
-Effect Size: 0.05/0.5 = 0.1 - effect of 0.1 standard deviations is considered small.
+Effect Size: 0.05/0.5 = 0.1 - effect of d = 0.1 standard deviations is considered small.
 
 
 ```{r required sample size}
@@ -140,13 +141,18 @@ ggplot(airbnb_peek, aes(y=yes_mean, x=as.factor(guest_black))) + geom_bar(stat='
 
 For African-American/Black people, there is a lower average number of acceptances as a guest.
 
-6. Estimate the treatment effect. Replicate the three columns of Edelman and Luca 2017, Table 2, p. 8 (shown below). Use a linear probability model. Do not worry about clustering standard errors, we will get back to this later in this course. To show the standard errors rather than the confidence intervals, set the option confint=FALSE when using the command summ.
+6. Estimate the treatment effect. Replicate the three columns of Edelman and Luca 2017, Table 2, p. 8.
 
 
 ```{r}
 #Regression 1 with only guest_black included
 reg1 <- lm(yes ~ guest_black, data=airbnb)
 summ(reg1, confint=TRUE)
+```
+
+```{r plot 95 confidence level}
+treatment_effect <- c("Treatment_effect"="guest_black")
+plot_summs(reg1, scale = TRUE, coefs = treatment_effect, plot.distributions = TRUE)
 ```
  
 ```{r}
@@ -163,11 +169,11 @@ summ(reg3, confint=TRUE)
 ```
 
 ```{r plot the 95 percent confidence interval for the estimated treatment effect}
-treatment_effect <- c("Treatment_effect"="treatment")
-plot_summs(reg1, scale = TRUE, coefs = treatment_effect, plot.distributions = TRUE)
+treatment_effect <- c("Treatment_effect"="guest_black")
+plot_summs(reg3, scale = TRUE, coefs = treatment_effect, plot.distributions = TRUE)
 ```
 
-The regression analysis indicates a lower acceptance rate for those who are black/african-american as opposed to those who are not. The first two regression report an estimated change of -0.08 in acceptances which is bigger than the 5% minimum effect rate that was included earlier, therefore supporting the conclusion of the regression.
+The regression analysis indicates a lower acceptance rate for those who have a Black/African-American name as opposed to those who have not. The first two regressions report an estimated change of -8 percentage points in acceptances for those who have a Black/African-American name.
 
 
 
