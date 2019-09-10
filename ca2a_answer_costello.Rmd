@@ -1,15 +1,16 @@
 ---
-title: "Computer Assignment 2a"
+title: "Computer Assignment 2a Costello"
 author: "Rebecca Costello"
 date: "9/3/2019"
 output: pdf_document
 ---
 
+Rebecca Costello - Ties van der Veen - Niels van Opstal
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r packages, include=FALSE}
+```{r packages, eval=FALSE, include=FALSE}
 options(repos="https://cran.rstudio.com")
 install.packages("jtools")
 install.packages("huxtable")
@@ -21,8 +22,9 @@ install.packages("lemon")
 install.packages("matrix")
 install.packages("dplyr")
 install.packages("ggdag")
+```
 
-
+```{r include=FALSE}
 library(foreign)
 library(tidyverse)
 library(ggdag)
@@ -35,6 +37,9 @@ library(ggstance)
 library(pwr)
 library(knitr)
 library(lemon)
+library(RecordLinkage)
+library(jtools)
+
 
 ```
 
@@ -59,10 +64,11 @@ II. Potential outcomes
 
 (a) Define the two potential outcomes for a particular student, Y(0,i) and Y(1,i).
 Y(0,i) = Risk perceptions remain the same
-T(1,i) = Higher risk perceptions. 
+T(1,i) = Risk perceptions changes. 
 
 (b) Thinking of a particular individual, why exactly would someone’s perception of bicycle theft be affected by having been reminded of the last instance of bicycle theft?
-When someone first recalls the last instance of bicycle theft, they remenber the feelings/emotions attached to that experience. It is brought to the forfront of their mind and they use this information in answering the next question. This can also be called the availability heuristic.
+Their perception of bicycle theft could be affected because they were reminded of the last time this happened. This makes the memory more salient, which makes them consider the risk more readily. 
+When someone first recalls the last instance of bicycle theft, they remenber the feelings/emotions attached to that experience. It is brought to the forfront of their mind and they use this information in answering the next question. This can also be called the availability heuristic. 
 
 
 III. Descriptive statistics
@@ -168,11 +174,11 @@ The direction of the graph suggest that with the treatment, there is a decrease 
 probability model).
 The estimation equation:
 Y_i= B_0 + B_1x +B_2e
+perception_persons_low = Beta_{0} + /beta_{1}*Treatment + error
+
+
 
 ```{r regression}
-install.packages("RecordLinkage")
-library(RecordLinkage)
-library(jtools)
 
 reg1 <- lm(perception_person_low ~ treatment, data=students)
 summ(reg1, confint=TRUE)
@@ -186,26 +192,26 @@ plot_summs(reg1, scale = TRUE, coefs = treatment_effect, plot.distributions = TR
 
 
 (d) Did the treatment have a statistically significant effect on the outcome variable? If so, at what level of confidence are you able to reject your null hypothesis (1, 5, 10% confidence level)?
-Yes the treatment has a statistically significant effect on the outcome variable at a 5% confidence level.
+Yes the treatment has a statistically significant effect on the outcome variable at a 5% .
 
 (e) Interpret the regression results for the variable treatment. Remember the proper way of reporting an estimated effect from the lecture - and that percentages and percentage points are not the same thing.
-Treatment is dicotomus- therefore a one-unit increase in treatment, ie for those who had first the question to recall theft incident before being asked about perceived risk, lead to a change of -0.15/-.28/-0.01 percentage points in low perceived perception of risk. In other words, the treatment group had a higher perceived perception of risk.
+The chance of viewing the risk of your bike being stolen as low decreases by 15 percentage points when you are reminded of the last time your bike was stolen previously to being asked to asses the risk of your bike being stolen.
 
 f) Is the size of the estimated treatment effect large or small?
 The estimated treatment effect is -0.15.
-Bets +-1.96SE(B)
--0.15+1.96(-.28)= -0.6988
--0.15-1.96(-.28)= 0.3988
 
 Judgement of size of treatment effect:
 Beta/baseline mean of outcome variable (in control/treatment?) *100%
--0.15/0.4*100 = 37.5
-!!!!What does this mean??
+-0.15/0.4*100 = 37.5, this is large.
+
 
 (g) And in terms of the number of standard deviations of the outcome variable, how does the size of the effect compare to d=0.2 in section VII?
+R^2 in the regression is 0.02, so the size seems to be appropriate
+
 
 (h) Those students who never had their bicycle stolen could not really be treated. Does the fact that not all in the treatment group were really treated lead to a bias in the estimated effect of the treatment?
-Yes as the effect the framing of the questions were supposed to have would not have changed anything. We wanted to measure this effect and their data being included would disrupt the effect.
+No, because the random selection into control/treatment accounted for this (control also has people who have never had their bike stolen).
+
 
 
 
