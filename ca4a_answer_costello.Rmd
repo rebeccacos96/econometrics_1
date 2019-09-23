@@ -1,0 +1,267 @@
+---
+title: "Computer Assignment 4a Costello"
+author: "Rebecca Costello"
+date: "9/19/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Treatment: Mothers who gave birth to the first child just after the policy change
+Control: Mothers not entitled to the new regulation as they gave birth in June 1990
+
+```{r packages}
+options(repos="https://cran.rstudio.com")
+install.packages("jtools")
+install.packages("huxtable")
+install.packages("ggstance")
+install.packages("summarytools")
+install.packages("pwr")
+install.packages("knitr")
+install.packages("lemon")
+install.packages("tinytex")
+install.packages("AER")
+install.packages("rdrobust")
+install.packages("lubridate")
+
+```
+
+```{r packages II}
+install.packages(("tidyverse"))
+```
+
+```{r packages III}
+install.packages("rdrobust")
+
+```
+
+
+```{r library}
+library(foreign)
+library(tidyverse)
+library(ggdag)
+library(dplyr)
+library(tinytex)
+library(jtools)
+library(huxtable)
+library(summarytools)
+library(ggstance)
+library(pwr)
+library(knitr)
+library(lemon)
+library(AER)
+library(rdrobust)
+library(lubridate)
+```
+
+```{r layout}
+knit_print.data.frame <- lemon_print
+```
+
+```{r tell sumtools work in markdown}
+st_options(plain.ascii = FALSE, style = "rmarkdown")
+st_css()
+```
+
+```{r}
+theUrl_ca4a <- "https://surfdrive.surf.nl/files/index.php/s/QR62KtWGsAlKiE8/download"
+parents <- read.dta (file = theUrl_ca4a)
+```
+
+II. Potential outcomes
+(a) Define the two potential outcomes for each mother, Y(0,i) and Y(1,i).
+Y(0,i): Mother will not have a second child within 27.5 months after giving birth to the first child.
+ 
+Y(1,i): Mother will have a second child within 27.5 months after giving birth to the first child.
+
+(b) Why exactly would return to work be affected by the birth date of the baby? 
+A mother will be less likely to have another baby soon after going back to work. When mothers return to work, they start rebuilding skills and making progress in the workplace which takes time and energy. Getting used to a schedule as a working mum also takes time. By having a baby soon after returning to work, they may give up career development as it is not possible to continue working and employers may be less likely to invest in their future.
+
+III. Descriptive statistics
+(a) How long is the time window around July 1 in the data?
+
+```{r time window}
+parents$bd <- as.Date(parents$bd)
+min(parents$bd,na.rm=TRUE)
+max(parents$bd,na.rm=TRUE)
+```
+The time window is between the 1st June and the 30th July.
+
+(b) How many women are included in the dataset?
+```{r women count}
+NROW(parents$bd)
+```
+
+
+(c) What is the average number of women included in the dataset per birthday? 
+
+```{r avg women per birthday}
+obsperday <- parents %>% group_by(month(parents$bd), mday(parents$bd)) %>% tally()
+mean(obsperday$n)
+```
+
+(d) How does the number of observations vary by date?
+```{r daycounter}
+obsperday$daycounter <- seq.int(nrow(obsperday))
+```
+
+```{r plot 1}
+plot(obsperday$daycounter, obsperday$n, ylab="number of births", xlab="date (1=June 1)", xlim=(c(1,60)))
+abline(h=mean(obsperday$n), col="purple")
+abline(v=31, col="red")
+```
+
+
+(e) Of all women, what percentage had an additional birth within three years?
+```{r additional birth within three years}
+summary(parents$uncb3)
+```
+34.5 percent of wonen had an additional birth within three years.
+
+
+(f) Of all women, what percentage returned to work within three years?
+```{r return to work}
+summary(parents$uncj3)
+```
+
+
+(g) Of all women, what percentage is between 30 and 34 years of age?
+```{r women aged 30 to 34}
+summary(parents$age3034)
+```
+
+9.8 percent of women are aged between 30 and 34 years of age.
+
+IV. Graphical evidence of a treatment effect
+
+(a) Produce a graph that shows whether take up of parental leave in the second year (variable ikar4) is affected by the policy of extending parental leave from 12 to 24 months. 151 is May 31 so we substract 151 to start Jun 1 as 1. A linear functional form (p=1) is imposed within a regression discontinuity design.
+
+```{r take up of parental treatment in the second year}
+with(parents, rdplot(y = ikar4, p=1, x = yday(bd)-151, c=31,
+                     title="Discontinuity in take up of parental leave",
+                     x.label="days relative to June 1, 1990",
+                     y.label="PL in 2nd year"))
+```
+
+y = dependent variable = ikar4 = take up of parental leave in the second year
+x = running variable = yday(bd)-151 = overview of time window with june 1 as day 1.
+
+```{r find todays date and number}
+format(Sys.Date(), "%j")
+```
+
+(b) Do the same thing as under (a), but now for an outcome variable pbexp3 : months of employment within the three years after delivery of the first child. Do the treatment and control group behave very differently? Compare your output with Table V on page 1389 (‘Employment 0-36 months’).
+
+```{r months of employment within 3 years after first child}
+with(parents, rdplot(y = pbexp3, p=1, x = yday(bd)-151, c=31,
+                     title="Discontinuity in employement within 3 yrs after first child",
+                     x.label="days relative to June 1, 1990",
+                     y.label="Months of employment within 3 yrs after 1st child"))
+```
+
+
+
+There is, at 10 percent confidance interval, a significant negative effect of the longer PL on months of employment within 3 years after the birth of the first child. The conclusion from  Lalive and Zweimuller 2009 can also be seen grafically above. Treated mothers work about 1 month per year less during the first three years after giving birth.
+
+
+
+V. Estimation of the treatment effect
+1. Treatment effect on fertility (additional child within three years uncb3)
+2. Treatment effect on short run labour market performance (returning to work within three years uncj3)
+
+(a) Write out the regression equation for estimating the treatment effect in mathematical terms, including all the necessary subscripts. 
+
+Fertility: Y_i = B_0 + B_1*PL_extended_to_24months + error
+SRLabourMarketPerformace: Y_i = B_0 + B_1*PL_extended_to_24months + error
+
+(b) Run a simple regression for fertility – use a linear probability model and the treatment dummy July – and follow the authors by not including the running variable:
+
+```{r regression for fertility}
+reg4a1 <- lm(uncb3 ~ july, data=parents)
+summ(reg4a1)
+```
+
+Our results concur with Lalive and Zwiemullen with an estimated 5 additional births per hundred mothers after July. This result is significant at the 1% confidence interval.
+
+(c) Do the same thing as under (b), but now for short run labor market performance uncj3. Compare your
+regression output with the results reported in Table V on page 1389, first row.
+
+```{r regression for SR labour market performance}
+reg4a2 <- lm(uncj3 ~ july, data=parents)
+summ(reg4a2)
+```
+
+In concurrence with Lalive and Zweimuller 2009, an additional (rough estimate of) 10 of 100 mothers have not returned to work within three years after the 1990 birth. This has a significant negative effect on short run labour market performance. 
+
+(d) How did the policy affect the long run labor market performance of these women? Check this by using the variables pbexp10 (months of employment later on) and pbinc_tot10 (monthly earnings later on).
+
+```{r reg for LR market performance}
+reg4a3 <- lm(pbexp10 ~ july, data=parents)
+summ(reg4a3)
+```
+
+There was no significant effect of the policy found on long term labour market performance of the women (p>.1).
+
+```{r reg for monthly earnings later on}
+reg4a4 <- lm(pbinc_tot10 ~ july, data=parents)
+summ(reg4a4)
+```
+
+There was no significant effect of the policy found on monthly earnings later on (p>.1).
+
+VI. Check on the validity of the approach
+
+(a) Check visually whether the following characteristics of women follow a smooth path around the July 1 cutoff: indWholesale, unEmpl, laborEarnings.
+
+```{r graph of indWholesale}
+with(parents, rdplot(y = indWholesale, p=1, x = yday(bd)-151, c=31,
+                     title="Discontinuity in indWholesale",
+                     x.label="days relative to June 1, 1990",
+                     y.label="indWholesale"))
+```
+
+```{r graph of unEmpl}
+with(parents, rdplot(y = unEmpl, p=1, x = yday(bd)-151, c=31,
+                     title="Discontinuity in unemployment",
+                     x.label="days relative to June 1, 1990",
+                     y.label="Unemployment"))
+```
+
+```{r graph of laborEarnings}
+with(parents, rdplot(y = laborEarnings, p=1, x = yday(bd)-151, c=31,
+                     title="Discontinuity in Labour Earnings",
+                     x.label="days relative to June 1, 1990",
+                     y.label="laborEarnings"))
+```
+                     
+                     
+All of the above graphs appear to follow a smooth path around the July 1 cutoff.
+
+(b) We check this assumption visually, using the command rdplot. Question is whether we see a drop in births before July 1 and a spike after that. On the horizontal axis is the daycounter; on the vertical axis the number of observations (i.e. number of births). We limit the bandwidth to 10 observations before and 10 observations after the cutoff point. We force the number of bins to be 20. 
+                     
+```{r check ass that subjects cannot manipulate treatment assignment}
+with(obsperday, rdplot(y = n, p=1, x = daycounter, c=31, nbins=20,
+                       subset=obsperday$daycounter[21:40],
+                       title="Discontinuity in number of births",
+                       x.label="daycounter", y.label="Number of births"))
+```
+                     
+The graph does suggest a slight drop in births before July 1 and a increase afterwards. This would bias the estimates due to the selection bias. Mothers that may have waited until the policy was in place perhaps to make use of the extra PL time to have another child. Therefore one observation that should be included in the control was not, even though in the control they may have very well still has a second child within 3 years. This could lead to an overestimation of the treatment effect.
+
+(b_1)Next, run a regression, to see whether the difference is statistically significant for this variable n. Again, we limit the bandwidth to 20 observations around the cutoff. A dummy for dates as of July 1 can be generated as follows:
+
+```{r reg number of births}
+obsperday$july <- as.numeric(obsperday$daycounter>=31)
+reg4a5 <- lm(n ~ july, data=obsperday, subset=(obsperday$daycounter[21:40]))
+summ(reg4a5)
+```
+
+The number of births before and after July 1 was not statistically different and therefore giving no indication of significant bias for selection into treatment.              
+                     
+                     
+                     
+                     
+                     
+                     
