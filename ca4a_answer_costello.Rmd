@@ -8,9 +8,10 @@ output: pdf_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+#Ties, Rebecca and Niels
 
-Treatment: Mothers who gave birth to the first child just after the policy change
-Control: Mothers not entitled to the new regulation as they gave birth in June 1990
+Treatment: Mothers who gave birth to the second child within 3 years after the first
+Control: Mothers not giving birth to second child within 3 years after the first birth.
 
 ```{r packages}
 options(repos="https://cran.rstudio.com")
