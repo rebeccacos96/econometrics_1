@@ -1,0 +1,71 @@
+---
+title: "Computer Assignment 4b Costello"
+author: "Rebecca Costello"
+date: "9/23/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+Ties, Rebecca and Niels
+
+```{r packages}
+library(foreign)
+library(tidyverse)
+library(ggdag)
+library(dplyr)
+library(tinytex)
+library(jtools)
+library(huxtable)
+library(summarytools)
+library(ggstance)
+library(pwr)
+library(knitr)
+library(lemon)
+library(AER)
+library(rdrobust)
+library(lubridate)
+
+```
+
+```{r layout}
+knit_print.data.frame <- lemon_print
+st_options(plain.ascii = FALSE, style = "rmarkdown")
+st_css()
+```
+
+```{r data}
+theUrl_ca4b <- "https://surfdrive.surf.nl/files/index.php/s/JAo4jnvf042xQXt/download"
+fertility <- read.dta (file = theUrl_ca4b)
+```
+
+1. Mechanism
+Y(0,i)= A baby will not be concieved
+Y(1,i)= A baby will be conceived and born whereby the mother recieves the cash benefit of 2,500eu
+
+Why fertility may be affected by the child benefit:
+-Having a child is an expensive choice and the benefit may ease the cost burden of having a child, allowing the parents to provide a slightly better life.
+-People may be incentivised by the child benefit to pay for things they need.
+
+2. Descriptive Statistics
+(a) What is the average number of abortions per month in your data sample for Spain (representing 88
+percent of national abortions, see page 165 of the paper)?
+
+```{r avg abortions}
+abortpermth <- fertility %>% group_by(month(fertility$abortions), mday(fertility$abortions)) %>% tally()
+mean(abortpermth)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
