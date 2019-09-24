@@ -11,6 +11,32 @@ knitr::opts_chunk$set(echo = TRUE)
 Ties, Rebecca and Niels
 
 ```{r packages}
+options(repos="https://cran.rstudio.com")
+install.packages("jtools")
+install.packages("huxtable")
+install.packages("ggstance")
+install.packages("summarytools")
+install.packages("pwr")
+install.packages("knitr")
+install.packages("lemon")
+install.packages("tinytex")
+install.packages("AER")
+install.packages("rdrobust")
+install.packages("lubridate")
+
+```
+
+```{r packages II}
+install.packages(("tidyverse"))
+```
+
+```{r packages III}
+install.packages("rdrobust")
+install.packages("ggdag")
+```
+
+
+```{r packages}
 library(foreign)
 library(tidyverse)
 library(ggdag)
@@ -45,7 +71,7 @@ Y(0,i)= A baby will not be concieved
 Y(1,i)= A baby will be conceived and born whereby the mother recieves the cash benefit of 2,500eu
 
 Why fertility may be affected by the child benefit:
--Having a child is an expensive choice and the benefit may ease the cost burden of having a child, allowing the parents to provide a slightly better life.
+-Having a child is an expensive choice and the benefit may ease the cost burden of having a child, providing more disposable income, allowing the parents to provide a slightly better life.
 -People may be incentivised by the child benefit to pay for things they need.
 
 2. Descriptive Statistics
@@ -53,10 +79,119 @@ Why fertility may be affected by the child benefit:
 percent of national abortions, see page 165 of the paper)?
 
 ```{r avg abortions}
-abortpermth <- fertility %>% group_by(month(fertility$abortions), mday(fertility$abortions)) %>% tally()
-mean(abortpermth)
+summary(fertility$abortions)
+
 ```
 
+
+
+
+```{r}
+bycalmonth <- fertility %>% group_by(calendar_month)
+mean(bycalmonth$abortions)
+```
+
+
+(b) In percentage terms, how much higher would the number of births be if there were no abortions (number
+of births is directly based on number of conceptions, number of births is based on all of Spain, and
+assume that the national estimate for the number of abortions is 1.14 times the average reported for
+the sample of 14 regions).
+
+```{r}
+bycalmonth <- fertility %>% group_by(calendar_month) 
+mean(bycalmonth$conceptions)
+
+```
+```{r conceptions percent }
+summary(fertility$conceptions)
+
+```
+
+(c) What is the complete calendar time window for which you have data? To create a date variable, you
+can do the following:
+
+```{r cal time window}
+fertility$date1 <- fertility$calendar_year+(fertility$calendar_month/12)
+fertility$date1 <- fertility$date1-(1/12)
+fertility$date1 <- as.yearmon(fertility$date1)
+
+fertility$date1 <- as.Date(fertility$date1)
+min(fertility$date1,na.rm=TRUE)
+max(fertility$date1,na.rm=TRUE)
+
+
+```
+The time window is from the 1st of April 2001 until 1st of December 2009.
+
+(d) Using a scatterplot and the date-variable date, show the general trend in the number of abortions over
+time. Make sure the vertical axis ranges from 0 to 10,000.
+
+```{r}
+plot(fertility$date1, fertility$abortions,
+     xlab="Year", ylab="Avg number of abortions",
+     ylim = c(0, 10000))
+abline(lm(fertility$abortions ~ fertility$date1))
+```
+
+3. Graphical evidence
+
+(a) Show how the number of conceptions changes around the cutoff date, taking month of conception as
+the running variable.
+
+running variable should be 
+
+```{r}
+monconcprange <- fertility$month_of_conception
+monconcprange <- range(-40, 29)
+```
+
+
+```{r}
+is.na(monconcprange)
+```
+```{r}
+with(fertility, rdplot(y = conceptions, x = month_of_conception, p=1, c=0, nbins = 35,
+                        title="Discontinuity conception",
+                        x.label="month of conception relative to July 1, 2007",
+                        y.label="number of conceptions"))
+``` 
+
+(b) What is the treatment effect in terms of conceptions? Infer this from eyeballing the discontinuity at
+the cutoff point (so a rough idea of the difference is sufficient here; we will derive exact answers later
+on when you run regressions). Derive the approximate percentage change.
+
+There is a spike in conceptions around the cutoff point (with a increase leading up to it), and then a decline as conceptions return to the average. This shows self_selection into treatment. It goes from 40000 to 44000, indicating a 10 per cent increase.
+
+
+(c) Do the same thing as asked under (a) and (b), but now for the number of abortions and with month of
+birth as running variable. The figure you are going to plot is a nice illustration of the importance of the
+functional form that you impose on the relationship between the running variable and the outcome.
+
+```{r}
+with(fertility, rdplot(y = abortions, x = month_of_birth, p=1, c=0, nbins = 35,
+                        title="Discontinuity abortions",
+                        x.label="month of birth relative to July 1, 2007",
+                        y.label="number of abortions"))
+``` 
+
+
+Abortions can be seen to slowly decrease after the cutoff point of the policy being introduced. 
+
+
+4. Test of treatment effect
+1. Treatment effect on conception (ln_conceptions)
+```{r naive reg conception}
+reg4b1 <- lm(ln_conceptions ~ treatment_dummy, data=fertility)
+summ(reg4b1)
+```
+
+
+2. Treatment effect on abortions (ln_abortions)
+
+```{r naive reg abortions}
+reg4b2 <- lm(ln_abortions ~ treatment_dummy, data=fertility)
+summ(reg4b2)
+```
 
 
 
