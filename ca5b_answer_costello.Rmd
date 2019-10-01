@@ -1,0 +1,216 @@
+---
+title: "Computer Assignment 5B Costello"
+author: "Rebecca Costello"
+date: "9/30/2019"
+output: pdf_document
+---
+
+#Rebecca Costello, Ties van der Veen and Niels van Opstal
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r packages into library, include=FALSE}
+library(foreign)
+library(tidyverse)
+library(ggdag)
+library(dplyr)
+library(tinytex)
+library(jtools)
+library(huxtable)
+library(summarytools)
+library(ggstance)
+library(pwr)
+library(knitr)
+library(lemon)
+library(AER)
+library(lubridate)
+```
+
+```{r layout, include=FALSE}
+knit_print.data.frame <- lemon_print
+
+st_options(plain.ascii = FALSE, style = "rmarkdown")
+st_css()
+```
+
+```{r data}
+theUrl_ca5b <- "https://surfdrive.surf.nl/files/index.php/s/76yJI80rr6J9eYN/download"
+crime <- read.dta (file = theUrl_ca5b)
+```
+
+1. Mechanism
+
+(a) Define the two potential outcomes for a particular city, Y(0,i) and Y(1,i).
+The amount of sexual abuse and rape stays the same 
+The amount of sexual abuse and rape changes
+
+(b) Provide one or more reasons why tippel zones may affect crime. 
+
+Regulating prostitution allows for more control and safety measures. This protects the sex workers there, reducing crime and any opportunity for shady business. Everything happens within the law, which also means the people working there will be less afraid of police/law enforces coming around to check stuff out.
+
+
+
+```{r}
+crime$citytype <- 3
+
+crime$citytype[crime$city1 == 1] <- 1
+crime$citytype[crime$city1 == 2] <- 1
+crime$citytype[crime$city1 == 3] <- 1
+
+crime$citytype[crime$city1 == 4] <-2
+crime$citytype[crime$city1 == 21] <-2
+crime$citytype[crime$city1 == 12] <-2
+crime$citytype[crime$city1 == 14] <-2
+crime$citytype[crime$city1 == 10] <-2
+crime$citytype[crime$city1 == 6] <-2
+```
+               
+mean and standard distribution of the outcome variables:
+sexual abuse and rape (rapesexapcN)
+#mean and standard deviation of the outcome variable 
+
+```{r}
+crime %>%
+  filter(crime$citytype==1) %>%
+  summarise(mean=mean(rapesexapcN), sd=sd(rapesexapcN))
+```
+
+```{r}
+crime %>%
+  filter(crime$citytype==2) %>%
+  summarise(mean=mean(rapesexapcN), sd=sd(rapesexapcN))
+```
+
+```{r}
+crime %>%
+  filter(crime$citytype==3) %>%
+  summarise(mean=mean(rapesexapcN), sd=sd(rapesexapcN))
+```
+
+
+sexual abuse (sexassaultpcN)
+```{r}
+crime %>%
+  filter(crime$citytype==1) %>%
+  summarise(mean=mean(sexassaultpcN), sd=sd(sexassaultpcN))
+```
+
+```{r echo=TRUE}
+crime %>%
+  filter(crime$citytype==2) %>%
+  summarise(mean=mean(sexassaultpcN), sd=sd(sexassaultpcN))
+```
+
+```{r echo=TRUE}
+crime %>%
+  filter(crime$citytype==3) %>%
+  summarise(mean=mean(sexassaultpcN), sd=sd(sexassaultpcN))
+```
+
+
+rape (rapepcN)
+
+```{r echo=TRUE}
+crime %>%
+  filter(crime$citytype==1) %>%
+  summarise(mean=mean(rapepcN), sd=sd(rapepcN))
+```
+
+
+```{r echo=TRUE}
+crime %>%
+  filter(crime$citytype==2) %>%
+  summarise(mean=mean(rapepcN), sd=sd(rapepcN))
+```
+
+
+```{r echo=TRUE}
+crime %>%
+  filter(crime$citytype==3) %>%
+  summarise(mean=mean(rapepcN), sd=sd(rapepcN))
+```
+
+Average crime rates over the three groups, with group 1 that includes the large cities show on average a higher amount of rape and sexual abuse. These figures are comparable to those from the paper
+
+\newpage
+(b) Is the outcome variable rapesexapcN normally distributed? Just look at the shape of the distribution, do not worry about a statistical test for normality.
+
+```{r distribution of outcome var}
+
+
+ggplot(crime, aes(x=as.factor(rapesexapcN)))+
+ geom_histogram(stat="count")+
+ labs(x='level of rape and sexual violence', y='count', title='Crime rates')
+```
+
+
+3. Statistical test of a treatment effect
+
+(a)
+
+$$Y_{i, s, t} = \alpha + \delta (TREAT_{s} x POST_{t}) + \beta TREAT_{s} + \gamma POST_{t} + \varepsilon_{i, s ,t}$$
+
+
+(b)
+
+```{r}
+didrapesexass <- lm(lnrapesexaN ~ opening + logpopmale1565 + logpopdens + inkhh + educhpc + nondutchpc + insurWWAO +
+mayorCDA + mayorCU + mayorD66 + mayorVVD + factor(crime$city) + factor(crime$year), data=crime)
+summ(didrapesexass)
+```
+ 
+ With the opening of the tippelzones there is a 14% decrease in rape and sexual assault crimes. This is relatively a large effect. 
+
+(c) For the regression your ran under (b), exclude all the covariates. Do this for the ‘sexual abuse and rape’ variable only. What happens to the size of the estimated treatment effect? How are we to explain this change in the estimated effect?
+
+```{r}
+rapesexassreg1 <- lm(lnrapesexaN ~ opening, data=crime)
+summ(rapesexassreg1)
+```
+
+
+the estimated effect is now large and positive. This is due to not taking into account different cities with different populations and also different crime rates. 
+
+(d)
+
+Falsification is used to test for an effect that should not be there. So here we would be able to see that the treatment variable and outcome are not related.
+
+```{r}
+theft <- lm(lnsimtheftN ~ opening + logpopmale1565 + logpopdens + inkhh + educhpc + nondutchpc + insurWWAO +
+mayorCDA + mayorCU + mayorD66 + mayorVVD, data=crime)
+summ(theft)
+```
+
+Effect is small which is good, but this regression is incorrect as it needs the correct one from a.    
+               
+               
+               
+               
+               
+               
+               
+               
+               
+               
+               
+               
+               
+               
+               
+               
+               
+               
+               
+               
+               
+               
+               
+               
+               
+               
+               
+               
